@@ -1,4 +1,8 @@
 import pandas as pd
+import matplotlib.pyplot as plt
+import plotly.express as px
+import geopandas as gpd
+import seaborn as sns
 
 dc_df = pd.read_csv("../data/degree completions.csv")
 uni_df = pd.read_csv("../data/university info.csv", encoding='latin')
@@ -72,17 +76,86 @@ print(national_averages)
 
 ################# SIZE
 
-def categorize_size(total_awards):
-    if total_awards < 500:
-        return 'Small'
-    elif 500 <= total_awards <= 2000:
-        return 'Medium'
-    else:
-        return 'Large'
 
-merged_df['size_category'] = merged_df['total_awards'].apply(categorize_size)
-
-print("Size vs awards")
-print(merged_df.groupby('size_category')[group_totals])
+# merged_df['size_category'] = merged_df['total_awards'].apply(categorize_size)
+#
+# print("Size vs awards")
+# print(merged_df.groupby('size_category')[group_totals])
 
 ################# PRIVATE/PUBLIC, ETC
+
+ethnicity_columns = [
+    'awards_native_american_total', 'awards_asian_total', 'awards_black_total',
+    'awards_hispanic_total', 'awards_pacific_islander_total', 'awards_white_total'
+]
+
+# Aggregate data by control type using mean instead of sum
+grouped_data_mean = merged_df.groupby('control')[ethnicity_columns].mean()
+
+# Plot horizontal bar charts for each control type
+for control_type in grouped_data_mean.index:
+    plt.figure(figsize=(10, 6))
+    grouped_data_mean.loc[control_type].plot(kind='barh', title=f'Average Awards by Ethnicity for {control_type} Institutions')
+    plt.xlabel('Average Awards')
+    plt.ylabel('Ethnicity')
+    plt.grid(axis='x', linestyle='--', alpha=0.7)
+
+plt.tight_layout()  # Adjust layout to prevent overlapping
+plt.show()
+
+################# FINANCIAL AID?
+
+# All universities have financial aid
+
+################# LOCATION - KEEP IT COMMENTED OUT TO NOT RERUN IT
+
+# Group by state, summing awards for each ethnicity
+# state_awards = merged_df.groupby('state')[ethnicity_columns].mean().reset_index()
+#
+# # Create a separate map for each ethnicity
+# for eth_col in ethnicity_columns:
+#     fig = px.choropleth(
+#         state_awards,                      # DataFrame with state-level sums
+#         locations="state",                 # Column with state abbreviations
+#         locationmode="USA-states",         # Tells Plotly to use USA state abbreviations
+#         color=eth_col,                     # Values to color by
+#         color_continuous_scale="Blues",     # Choose any built-in color scale or custom
+#         scope="usa",                       # Zoom in on the USA
+#         title=f"Total {eth_col.replace('_', ' ').title()} by State"  # Figure title
+#     )
+#
+#     # Display the figure
+#     fig.show()
+
+################# TOP 5 UNIVERSITIES
+
+for eth_col in ethnicity_columns:
+    # Group by institution and state, computing the mean of the chosen ethnicity column
+    grouped = (
+        merged_df
+        .groupby(['institution_name', 'state'])[eth_col]
+        .mean()
+        .sort_values(ascending=False)
+        .head(5)  # top 5
+    )
+
+    # Prepare a new DataFrame from this grouped result for plotting
+    top_5_df = grouped.reset_index()
+
+    # Create a new column combining institution name and state for the x-axis label
+    top_5_df['institution_label'] = top_5_df['institution_name'] + " (" + top_5_df['state'] + ")"
+
+    # Plot
+    plt.figure(figsize=(8, 6))
+    plt.bar(
+        top_5_df['institution_label'],
+        top_5_df[eth_col],
+        color='skyblue'
+    )
+    plt.xticks(rotation=45, ha='right')
+    plt.title(f'Top 5 Institutions by Mean {eth_col.replace("_", " ").title()}')
+    plt.xlabel('Institution (State)')
+    plt.ylabel(f'Mean {eth_col.replace("_", " ").title()}')
+
+plt.tight_layout()
+plt.show()
