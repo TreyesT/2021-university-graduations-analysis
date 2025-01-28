@@ -159,3 +159,50 @@ for eth_col in ethnicity_columns:
 
 plt.tight_layout()
 plt.show()
+
+################# HBCU VS NON HBCU
+
+# Define the columns that make up "minorities"
+minority_cols = [
+    'awards_native_american_total',
+    'awards_asian_total',
+    'awards_black_total',
+    'awards_hispanic_total',
+    'awards_pacific_islander_total'
+]
+non_minority_col = 'awards_white_total'
+
+# Sum minority awards per row
+merged_df['minorities_total'] = merged_df[minority_cols].sum(axis=1)
+# White (non-minority)
+merged_df['non_minorities_total'] = merged_df[non_minority_col]
+
+# Convert HBCU column into a user-friendly label if needed
+# If your 'hbcu' column is 0/1, do this:
+merged_df['hbcu_status'] = merged_df['hbcu'].map({1: 'HBCU', 2: 'Non-HBCU'})
+
+# Compute the mean for minorities_total by HBCU status
+minority_means = merged_df.groupby('hbcu_status')['minorities_total'].mean()
+
+# Compute the mean for non_minorities_total (White) by HBCU status
+white_means = merged_df.groupby('hbcu_status')['non_minorities_total'].mean()
+
+# 1) Plot the chart for Minorities
+plt.figure(figsize=(6, 4))
+minority_means.plot(kind='bar', color=['teal', 'gold'],
+                    title='Mean Awards (Minorities) by HBCU Status')
+plt.ylabel('Mean Awards')
+plt.xlabel('HBCU Status')
+plt.xticks(rotation=0)
+plt.tight_layout()
+plt.show()
+
+# 2) Plot the chart for White (non-minorities)
+plt.figure(figsize=(6, 4))
+white_means.plot(kind='bar', color=['teal', 'gold'],
+                 title='Mean Awards (White) by HBCU Status')
+plt.ylabel('Mean Awards')
+plt.xlabel('HBCU Status')
+plt.xticks(rotation=0)
+plt.tight_layout()
+plt.show()
