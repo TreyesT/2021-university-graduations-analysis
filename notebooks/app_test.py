@@ -74,16 +74,70 @@ national_averages = group_totals / total_awards
 print("National averages:")
 print(national_averages)
 
-################# SIZE
+################# Count of students
 
-
-# merged_df['size_category'] = merged_df['total_awards'].apply(categorize_size)
-#
-# print("Size vs awards")
-# print(merged_df.groupby('size_category')[group_totals])
+print("Total Degrees earned:")
+print(total_awards)
+print(group_totals)
 
 ################# PRIVATE/PUBLIC, ETC
 
+# Create a copy of the original DataFrame to work with
+df = merged_df.copy()
+
+# Sum up the minority columns into a single column
+df['minorities'] = (
+        df['awards_native_american_total'] +
+        df['awards_asian_total'] +
+        df['awards_black_total'] +
+        df['awards_hispanic_total'] +
+        df['awards_pacific_islander_total']
+)
+
+# Rename the white column (optional, just for clarity)
+df.rename(columns={'awards_white_total': 'white'}, inplace=True)
+
+# Group by 'control' and calculate the mean of 'white' and 'minorities'
+grouped_data_mean = df.groupby('control')[['white', 'minorities']].mean()
+
+# Create a figure and axis
+fig, ax = plt.subplots(figsize=(10, 6))
+
+fig.patch.set_facecolor('#FEFCF5')  # Background of the entire figure
+ax.set_facecolor('#FEFCF5')         # Background of the plot area
+
+# Plot a grouped bar chart
+# Note: If you'd like 'white' first (green), 'minorities' second (gray),
+# make sure the DataFrame columns are in the order [white, minorities].
+grouped_data_mean = grouped_data_mean[['white', 'minorities']]  # ensure column order
+grouped_data_mean.plot(
+    kind='bar',
+    ax=ax,
+    color=['#43A047', '#BDBDBD'],  # white (green), minorities (gray)
+    legend=True  # You may set False if you don’t want a legend
+)
+
+# Custom x-axis labels
+ax.set_xticklabels([
+    "Public Institution",
+    "Private Non-for-profit Institution",
+    "Private For-profit Institution"
+], rotation=0, fontsize=14)
+
+# Remove gridlines
+ax.grid(False)
+
+ax.set_xlabel('')
+
+# Remove the title
+ax.set_title('')
+
+ax.legend(fontsize=14)
+
+plt.tight_layout()
+plt.show()
+
+#
 ethnicity_columns = [
     'awards_native_american_total', 'awards_asian_total', 'awards_black_total',
     'awards_hispanic_total', 'awards_pacific_islander_total', 'awards_white_total'
@@ -91,24 +145,45 @@ ethnicity_columns = [
 
 # Aggregate data by control type using mean instead of sum
 grouped_data_mean = merged_df.groupby('control')[ethnicity_columns].mean()
-
-# Plot horizontal bar charts for each control type
-for control_type in grouped_data_mean.index:
-    plt.figure(figsize=(10, 6))
-    grouped_data_mean.loc[control_type].plot(kind='barh', title=f'Average Awards by Ethnicity for {control_type} Institutions')
-    plt.xlabel('Average Awards')
-    plt.ylabel('Ethnicity')
-    plt.grid(axis='x', linestyle='--', alpha=0.7)
-
-plt.tight_layout()  # Adjust layout to prevent overlapping
-plt.show()
-
-################# FINANCIAL AID?
-
-# All universities have financial aid
+#
+# # Plot horizontal bar charts for each control type
+# for control_type in grouped_data_mean.index:
+#     plt.figure(figsize=(10, 6))
+#     grouped_data_mean.loc[control_type].plot(kind='barh', title=f'Average Awards by Ethnicity for {control_type} Institutions')
+#     plt.xlabel('Average Awards')
+#     plt.ylabel('Ethnicity')
+#     plt.grid(axis='x', linestyle='--', alpha=0.7)
+#
+# plt.tight_layout()  # Adjust layout to prevent overlapping
+# plt.show()
 
 ################# LOCATION - KEEP IT COMMENTED OUT TO NOT RERUN IT
 
+# state_awards = df.groupby('state')[['minorities', 'white']].mean().reset_index()
+#
+# # Create the choropleth map for minorities
+# fig_minorities = px.choropleth(
+#     state_awards,
+#     locations="state",
+#     locationmode="USA-states",
+#     color="minorities",
+#     color_continuous_scale="Greens",
+#     scope="usa",
+#     title="Average Awards for Minority Students by State"
+# )
+# fig_minorities.show()
+#
+# # Create the choropleth map for white students
+# fig_white = px.choropleth(
+#     state_awards,
+#     locations="state",
+#     locationmode="USA-states",
+#     color="white",
+#     color_continuous_scale="Blues",
+#     scope="usa",
+#     title="Average Awards for White Students by State"
+# )
+# fig_white.show()
 # Group by state, summing awards for each ethnicity
 # state_awards = merged_df.groupby('state')[ethnicity_columns].mean().reset_index()
 #
@@ -129,39 +204,38 @@ plt.show()
 
 ################# TOP 5 UNIVERSITIES
 
-for eth_col in ethnicity_columns:
-    # Group by institution and state, computing the mean of the chosen ethnicity column
-    grouped = (
-        merged_df
-        .groupby(['institution_name', 'state'])[eth_col]
-        .mean()
-        .sort_values(ascending=False)
-        .head(5)  # top 5
-    )
-
-    # Prepare a new DataFrame from this grouped result for plotting
-    top_5_df = grouped.reset_index()
-
-    # Create a new column combining institution name and state for the x-axis label
-    top_5_df['institution_label'] = top_5_df['institution_name'] + " (" + top_5_df['state'] + ")"
-
-    # Plot
-    plt.figure(figsize=(8, 6))
-    plt.bar(
-        top_5_df['institution_label'],
-        top_5_df[eth_col],
-        color='skyblue'
-    )
-    plt.xticks(rotation=45, ha='right')
-    plt.title(f'Top 5 Institutions by Mean {eth_col.replace("_", " ").title()}')
-    plt.xlabel('Institution (State)')
-    plt.ylabel(f'Mean {eth_col.replace("_", " ").title()}')
-
-plt.tight_layout()
-plt.show()
+# for eth_col in ethnicity_columns:
+#     # Group by institution and state, computing the mean of the chosen ethnicity column
+#     grouped = (
+#         merged_df
+#         .groupby(['institution_name', 'state'])[eth_col]
+#         .mean()
+#         .sort_values(ascending=False)
+#         .head(5)  # top 5
+#     )
+#
+#     # Prepare a new DataFrame from this grouped result for plotting
+#     top_5_df = grouped.reset_index()
+#
+#     # Create a new column combining institution name and state for the x-axis label
+#     top_5_df['institution_label'] = top_5_df['institution_name'] + " (" + top_5_df['state'] + ")"
+#
+#     # Plot
+#     plt.figure(figsize=(8, 6))
+#     plt.bar(
+#         top_5_df['institution_label'],
+#         top_5_df[eth_col],
+#         color='skyblue'
+#     )
+#     plt.xticks(rotation=45, ha='right')
+#     plt.title(f'Top 5 Institutions by Mean {eth_col.replace("_", " ").title()}')
+#     plt.xlabel('Institution (State)')
+#     plt.ylabel(f'Mean {eth_col.replace("_", " ").title()}')
+#
+# plt.tight_layout()
+# plt.show()
 
 ################# HBCU VS NON HBCU
-
 # Define the columns that make up "minorities"
 minority_cols = [
     'awards_native_american_total',
@@ -173,36 +247,179 @@ minority_cols = [
 non_minority_col = 'awards_white_total'
 
 # Sum minority awards per row
-merged_df['minorities_total'] = merged_df[minority_cols].sum(axis=1)
+merged_df['minorities'] = merged_df[minority_cols].sum(axis=1)
 # White (non-minority)
-merged_df['non_minorities_total'] = merged_df[non_minority_col]
+merged_df['white'] = merged_df[non_minority_col]
 
-# Convert HBCU column into a user-friendly label if needed
+# Convert HBCU column into a user-friendly label
 # If your 'hbcu' column is 0/1, do this:
 merged_df['hbcu_status'] = merged_df['hbcu'].map({1: 'HBCU', 2: 'Non-HBCU'})
 
-# Compute the mean for minorities_total by HBCU status
-minority_means = merged_df.groupby('hbcu_status')['minorities_total'].mean()
+# Compute the mean for minorities and white students by HBCU status
+grouped_data_mean = merged_df.groupby('hbcu_status')[['white', 'minorities']].mean()
 
-# Compute the mean for non_minorities_total (White) by HBCU status
-white_means = merged_df.groupby('hbcu_status')['non_minorities_total'].mean()
+# Create a figure and axis
+fig, ax = plt.subplots(figsize=(8, 6))
 
-# 1) Plot the chart for Minorities
-plt.figure(figsize=(6, 4))
-minority_means.plot(kind='bar', color=['teal', 'gold'],
-                    title='Mean Awards (Minorities) by HBCU Status')
-plt.ylabel('Mean Awards')
-plt.xlabel('HBCU Status')
-plt.xticks(rotation=0)
+# Set background color
+fig.patch.set_facecolor('#FEFCF5')  # Background of the entire figure
+ax.set_facecolor('#FEFCF5')         # Background of the plot area
+
+# Plot a grouped bar chart
+grouped_data_mean = grouped_data_mean[['white', 'minorities']]  # Ensure column order
+grouped_data_mean.plot(
+    kind='bar',
+    ax=ax,
+    color=['#43A047', '#BDBDBD'],  # white (green), minorities (gray)
+    legend=True
+)
+
+# Custom x-axis labels (HBCU status)
+ax.set_xticklabels(["HBCU", "Non-HBCU"], rotation=0, fontsize=14)
+
+# Remove gridlines
+ax.grid(False)
+
+# Remove x-axis label
+ax.set_xlabel('')
+
+# Remove the title
+ax.set_title('')
+ax.legend(fontsize=14)
 plt.tight_layout()
 plt.show()
+# # Define the columns that make up "minorities"
+# minority_cols = [
+#     'awards_native_american_total',
+#     'awards_asian_total',
+#     'awards_black_total',
+#     'awards_hispanic_total',
+#     'awards_pacific_islander_total'
+# ]
+# non_minority_col = 'awards_white_total'
+#
+# # Sum minority awards per row
+# merged_df['minorities_total'] = merged_df[minority_cols].sum(axis=1)
+# # White (non-minority)
+# merged_df['non_minorities_total'] = merged_df[non_minority_col]
+#
+# # Convert HBCU column into a user-friendly label if needed
+# # If your 'hbcu' column is 0/1, do this:
+# merged_df['hbcu_status'] = merged_df['hbcu'].map({1: 'HBCU', 2: 'Non-HBCU'})
+#
+# # Compute the mean for minorities_total by HBCU status
+# minority_means = merged_df.groupby('hbcu_status')['minorities_total'].mean()
+#
+# # Compute the mean for non_minorities_total (White) by HBCU status
+# white_means = merged_df.groupby('hbcu_status')['non_minorities_total'].mean()
+#
+# # 1) Plot the chart for Minorities
+# plt.figure(figsize=(6, 4))
+# minority_means.plot(kind='bar', color=['teal', 'gold'],
+#                     title='Mean Awards (Minorities) by HBCU Status')
+# plt.ylabel('Mean Awards')
+# plt.xlabel('HBCU Status')
+# plt.xticks(rotation=0)
+# plt.tight_layout()
+# plt.show()
+#
+# # 2) Plot the chart for White (non-minorities)
+# plt.figure(figsize=(6, 4))
+# white_means.plot(kind='bar', color=['teal', 'gold'],
+#                  title='Mean Awards (White) by HBCU Status')
+# plt.ylabel('Mean Awards')
+# plt.xlabel('HBCU Status')
+# plt.xticks(rotation=0)
+# plt.tight_layout()
+# plt.show()
 
-# 2) Plot the chart for White (non-minorities)
-plt.figure(figsize=(6, 4))
-white_means.plot(kind='bar', color=['teal', 'gold'],
-                 title='Mean Awards (White) by HBCU Status')
-plt.ylabel('Mean Awards')
-plt.xlabel('HBCU Status')
-plt.xticks(rotation=0)
+################# SIZE FOR MINORITIES -- NOT RELEVANT AFTER ANALYSIS
+
+# Define which ethnicity columns count as "minorities" (all except white)
+minority_cols = [
+    'awards_native_american_total',
+    'awards_asian_total',
+    'awards_black_total',
+    'awards_hispanic_total',
+    'awards_pacific_islander_total'
+]
+non_minority_col = 'awards_white_total'
+
+# 1) Create two new columns for each row: total minority awards, and white awards
+merged_df['awards_minority'] = merged_df[minority_cols].sum(axis=1)
+merged_df['awards_non_minority'] = merged_df[non_minority_col]
+
+# 2) Group by institution_size and get the mean of these two new columns
+minority_by_size = (
+    merged_df
+    .groupby('institution_size')[['awards_minority', 'awards_non_minority']]
+    .mean()
+    .reset_index()
+)
+
+# 3) Melt for Plotly
+minority_by_size_long = pd.melt(
+    minority_by_size,
+    id_vars='institution_size',
+    value_vars=['awards_minority', 'awards_non_minority'],
+    var_name='group',
+    value_name='mean_awards'
+)
+
+# Optional: rename the group values for clarity
+minority_by_size_long['group'] = minority_by_size_long['group'].replace({
+    'awards_minority': 'Minority',
+    'awards_non_minority': 'White'
+})
+
+# 4) Create grouped bar chart for "Minority" vs. "White"
+fig_minority = px.bar(
+    minority_by_size_long,
+    x='institution_size',
+    y='mean_awards',
+    color='group',
+    barmode='group',
+    title='Mean Awards by Institution Size: Minorities vs. White',
+    labels={
+        'institution_size': 'Institution Size',
+        'mean_awards': 'Mean Number of Awards',
+        'group': 'Group'
+    },
+    color_discrete_sequence=['purple', 'orange']  # optional color choice
+)
+
+fig_minority.update_layout(
+    xaxis_tickangle=-45,
+    xaxis_title='Institution Size',
+    yaxis_title='Mean Number of Awards'
+)
+
+fig_minority.show()
+
+# 1) Map numeric HBCU column to labels (if needed)
+merged_df['hbcu_status'] = merged_df['hbcu'].map({1: 'HBCU', 2: 'Non-HBCU'})
+
+# 2) Create a cross-tab by (hbcu_status x control)
+#    normalize='columns' => each column sums to 1.0, so you get % distribution within each control type
+counts = pd.crosstab(merged_df['hbcu_status'], merged_df['control'])
+counts_perc = counts.div(counts.sum(axis=0), axis=1) * 100  # convert to percentages
+
+# 3) Plot heatmap
+fig, ax = plt.subplots(figsize=(6, 4))
+
+sns.heatmap(
+    data=counts_perc,
+    cmap='Blues',
+    annot=True,         # show numbers on each cell
+    fmt='.1f',          # one decimal place
+    vmin=0, vmax=100,   # color scale from 0% to 100%
+    cbar_kws={'label': 'Percentage (%)'}
+)
+
+# 4) Format and label the plot
+ax.set_title('Distribution of HBCU Status by Control Type', fontsize=14, pad=12)
+ax.set_xlabel('Control Type', fontsize=12)
+ax.set_ylabel('HBCU Status', fontsize=12)
+
 plt.tight_layout()
 plt.show()
